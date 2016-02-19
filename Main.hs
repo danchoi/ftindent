@@ -50,7 +50,7 @@ parser = do
     return $ FunctionType f (sourceColumn n) xs
 
 typeParams :: Parsec String () [TypeParam]
-typeParams = sepBy (typeParam <|> functionParam) (symbol "->")
+typeParams = sepBy (typeParam <|> functionParam) ((symbol "->" >> return ()) <|> whiteSpace)
 
 typeParam :: Parsec String () TypeParam
 typeParam = TypeParam <$> identifier

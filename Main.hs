@@ -10,6 +10,7 @@ import qualified Text.Parsec.Token as T (GenTokenParser(..))
 import Text.Parsec.Language
 import qualified Data.Text.IO as T
 import Data.Monoid
+import Data.List (intersperse)
 
 -- parse :: Stream s Identity t => Parsec s () a -> SourceName -> s -> Either ParseError a
 
@@ -33,12 +34,38 @@ data Function = Function Identifier DoubleColon [TypeParam]
 
 T.TokenParser{..} = haskell
 
-data FunctionType = FunctionType String Int [TypeParam]
+data FunctionType = FunctionType String Int [TypeParam] 
     deriving (Show)
 
-data TypeParam = TypeParam String 
-          | FuncTypeParam [TypeParam]
+type Comment = Maybe String
+
+data TypeParam = 
+            TypeParam String Comment
+          | FuncTypeParam [TypeParam] Comment Int
         deriving (Show)
+
+testparser :: Parsec String () (String, Int, Int, Maybe String)
+testparser = do 
+    whiteSpace 
+    f <- identifier
+    n <- sourceColumn <$> getPosition
+    symbol "::" 
+    x <- identifier'
+    n2 <- sourceColumn <$> getPosition
+    c <- comment
+    return (x, n,n2, c)
+
+identStart = letter
+identLetter = alphaNum <|> oneOf "_'"
+
+
+-- parses identifiers but does not consume following comment whitespace
+identifier' :: Parsec String () String
+identifier' = do
+    x <- identStart 
+    xs <- many identLetter
+    spaces
+    return (x:xs)
 
 parser :: Parsec String () FunctionType
 parser = do 
@@ -50,15 +77,32 @@ parser = do
     return $ FunctionType f (sourceColumn n) xs
 
 typeParams :: Parsec String () [TypeParam]
-typeParams = sepBy (typeParam <|> functionParam) ((symbol "->" >> return ()) <|> whiteSpace)
+typeParams = sepBy (typeParam <|> functionParam) (symbol "->" )
 
 typeParam :: Parsec String () TypeParam
-typeParam = TypeParam <$> identifier
+typeParam = do
+    t <- (concat . intersperse " ")  <$> (many1 identifier')
+    spaces
+    c <- (comment <* spaces)
+    return $ TypeParam t c
+
+comment :: Parsec String () (Maybe String)
+comment = do
+  option Nothing
+    $ fmap Just  (try $ do
+      string "--"
+      manyTill anyChar (string "\n")
+      )
+
+getCol = sourceColumn <$> getPosition
 
 functionParam :: Parsec String () TypeParam
 functionParam = do
-    xs <- parens typeParams
-    return $ FuncTypeParam xs
+    xs <- between (string "(") (string ")") typeParams
+    n <- getCol
+    spaces
+    c <- comment 
+    return $ FuncTypeParam xs c n
 
 main :: IO ()
 main = do

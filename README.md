@@ -1,4 +1,4 @@
-renderSearchGeneric :: Site -> Html -> Params -> Pagination -> Maybe Text 
+renderSearchGeneric :: Site -> Html -> Params -> Pagination -> Maybe Text  -- comment
                     -> (a -> AttributeValue) -- linkItem function
                     -> [a] 
                     -> ItemRendering a ViewMode

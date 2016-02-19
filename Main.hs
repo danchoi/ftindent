@@ -11,7 +11,6 @@ import Text.Parsec.Language
 import qualified Data.Text.IO as T
 import Data.Monoid
 
-
 -- parse :: Stream s Identity t => Parsec s () a -> SourceName -> s -> Either ParseError a
 
 --  main    = case (parse numbers "" "11, 2, 43") of
@@ -19,7 +18,6 @@ import Data.Monoid
 --             Right xs  -> print (sum xs)
 -- 
 --  numbers = commaSep integer
-
 
 -- type signature parsing
 {-
@@ -46,8 +44,8 @@ parser :: Parsec String () FunctionType
 parser = do 
     whiteSpace 
     f <- identifier
-    c <- symbol "::" 
     n <- getPosition
+    symbol "::" 
     xs <- typeParams
     return $ FunctionType f (sourceColumn n) xs
 
@@ -68,7 +66,6 @@ main = do
     case (parse parser "" s) of
             Left err  -> print err
             Right (xs ) -> print xs
-
 
 numbers :: Parsec String () [Integer]
 -- numbers = (commaSep haskell) (integer haskell)

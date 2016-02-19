@@ -57,7 +57,7 @@ typeParam = TypeParam <$> identifier
 
 functionParam :: Parsec String () TypeParam
 functionParam = do
-    xs <- between (symbol "(") (symbol ")") typeParams
+    xs <- parens typeParams
     return $ FuncTypeParam xs
 
 main :: IO ()

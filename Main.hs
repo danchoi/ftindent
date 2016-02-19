@@ -40,7 +40,7 @@ data FunctionType = FunctionType String Int [TypeParam]
 type Comment = Maybe String
 
 data TypeParam = 
-            TypeParam String Comment
+            TypeParam String Comment Int
           | FuncTypeParam [TypeParam] Comment Int
         deriving (Show)
 
@@ -57,7 +57,6 @@ testparser = do
 
 identStart = letter
 identLetter = alphaNum <|> oneOf "_'"
-
 
 -- parses identifiers but does not consume following comment whitespace
 identifier' :: Parsec String () String
@@ -81,18 +80,23 @@ typeParams = sepBy (typeParam <|> functionParam) (symbol "->" )
 
 typeParam :: Parsec String () TypeParam
 typeParam = do
-    t <- (concat . intersperse " ")  <$> (many1 identifier')
+    -- t <- (concat . intersperse " ")  <$> (many1 identifier')
+    t <- manyTill anyChar (try $ string "--")  -- TODO CHANGEME
+    string "--"
+    n <- getCol
     spaces
     c <- (comment <* spaces)
-    return $ TypeParam t c
+    return $ TypeParam t c n
 
 comment :: Parsec String () (Maybe String)
 comment = do
   option Nothing
-    $ fmap Just  (try $ do
-      string "--"
-      manyTill anyChar (string "\n")
-      )
+    $ fmap Just (try comment')
+
+
+
+
+comment' = string "--" >> manyTill anyChar (string "\n")
 
 getCol = sourceColumn <$> getPosition
 
@@ -114,7 +118,5 @@ main = do
 numbers :: Parsec String () [Integer]
 -- numbers = (commaSep haskell) (integer haskell)
 numbers = commaSep integer 
-
-
 
 
